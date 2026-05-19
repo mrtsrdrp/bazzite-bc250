@@ -80,20 +80,23 @@ in_cu_info && /mutex_lock/ && !inserted {
 ' "$GFX_SRC" > "${GFX_SRC}.new"
 mv "${GFX_SRC}.new" "$GFX_SRC"
 
-# 5. Compile the patched driver module
-make -C "/usr/lib/modules/${KVER}/build" M="$(pwd)/drivers/gpu/drm/amd/amdgpu" -j"$(nproc)" modules
+# 5. Create a dummy directory structure to satisfy macro relative lookups
+mkdir -p extra/layers
 
-# 6. Compress and replace the original kernel module in the image
+# 6. Compile the patched driver module using KCFLAGS to map the include layout
+make -C "/usr/lib/modules/${KVER}/build" M="$(pwd)/drivers/gpu/drm/amd/amdgpu" KCFLAGS="-I$(pwd)/extra/layers" -j"$(nproc)" modules
+
+# 7. Compress and replace the original kernel module in the image
 TARGET_MOD="/usr/lib/modules/${KVER}/kernel/drivers/gpu/drm/amd/amdgpu/amdgpu.ko.zst"
 zstd -f "drivers/gpu/drm/amd/amdgpu/amdgpu.ko" -o "$TARGET_MOD"
 
-# 7. Update module dependencies
+# 8. Update module dependencies
 depmod -a "${KVER}"
 
-# 8. Create the modprobe configuration to persist the 40 CU enablement
+# 9. Create the modprobe configuration to persist the 40 CU enablement
 mkdir -p /etc/modprobe.d
 printf '# BC-250 40 CU re-enablement\noptions amdgpu bc250_cc_write_mode=3\n' > /etc/modprobe.d/bc250-40cu.conf
 
-# 9. Clean up compilation tools to shrink final image footprint
+# 10. Clean up compilation tools to shrink final image footprint
 dnf5 remove -y git gcc make wget kernel-devel
 rm -rf "$WORKSPACE"
