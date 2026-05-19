@@ -1,3 +1,4 @@
+#!/bash
 #!/bin/bash
 set -ouex pipefail
 
@@ -79,6 +80,12 @@ in_cu_info && /mutex_lock/ && !inserted {
 { print }
 ' "$GFX_SRC" > "${GFX_SRC}.new"
 mv "${GFX_SRC}.new" "$GFX_SRC"
+
+# Hotfix 1: Force out-of-tree macro compiler to track tracing definition fields locally
+sed -i 's|#define TRACE_INCLUDE_PATH .*|#define TRACE_INCLUDE_PATH .|g' drivers/gpu/drm/amd/amdgpu/amdgpu_trace.h
+
+# Hotfix 2: Stub out missing panel brightness cap function to prevent implicit definition errors
+sed -i 's/drm_get_panel_min_brightness_quirk([^)]*)/-1/g' drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
 
 # 5. Create a dummy directory structure to satisfy macro relative lookups
 mkdir -p extra/layers
