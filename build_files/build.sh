@@ -9,11 +9,11 @@ MAJOR_VER=$(echo "$BASE_VER" | cut -d'.' -f1)
 # 2. Install kernel development headers and build dependencies inside the builder container
 dnf5 install -y git gcc make zstd wget awk kernel-devel-$(rpm -q kernel-core --queryformat '%{VERSION}-%{RELEASE}')
 
-# 3. Create an isolated workspace and fetch the specific kernel source code
+# 3. Create an isolated workspace and fetch the complete AMD driver tree to satisfy relative Makefile paths
 WORKSPACE=$(mktemp -d)
 cd "$WORKSPACE"
 wget "https://cdn.kernel.org/pub/linux/kernel/v${MAJOR_VER}.x/linux-${BASE_VER}.tar.xz"
-tar -xf "linux-${BASE_VER}.tar.xz" --strip-components=1 "linux-${BASE_VER}/drivers/gpu/drm/amd/amdgpu"
+tar -xf "linux-${BASE_VER}.tar.xz" --strip-components=1 "linux-${BASE_VER}/drivers/gpu/drm/amd"
 
 # 4. Patch the amdgpu driver source code for the 40 CU unlock
 GFX_SRC="drivers/gpu/drm/amd/amdgpu/gfx_v10_0.c"
